@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: agent
+    env: python
+    plan: free
+    region: eu-central
+    buildCommand: pip install -r requirements.txt
+    startCommand: python agent.py
+    envVars:
+      - key: ENV
+        value: prod
+      - key: DATABASE_URL
+        sync: false  # URL del database Neon
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false

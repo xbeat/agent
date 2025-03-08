@@ -1,0 +1,17 @@
+venv/
+.env
+*.pyc
+__pycache__/
+.DS_Store
+agent.sublime-workspace
+agent.sublime-project
+requirements.in
+test_db.py
+test_calendar.py
+test_db.py
+test_delete.py
+test_email.py
+test_update.py
+list_events.py
+credentials/
+test_db_upsert.py
