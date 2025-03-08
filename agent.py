@@ -103,28 +103,49 @@ class CalendarAgent:
         Considera questi sinonimi:
         - Creazione: aggiungi, crea, nuovo, inserisci, programma
         - Eliminazione: cancella, elimina, rimuovi, annulla
-        - Modifica: modifica, cambia, aggiorna, sposta, riprogramma
+        - Modifica: modifica, cambia, aggiorna, sposta, riprogramma, rinvia
         - Lista: mostra, elenca, lista, visualizza, vedi, dammi, quali
         
+        Linee guida critiche:
+        1. Il campo 'summary' DEVE contenere SOLO il titolo base dell'evento
+        2. Rimuovi ASSOLUTAMENTE riferimenti temporali dal 'summary' (es. "delle 15", "del 12 marzo")
+        3. Per 'modify'/'delete' senza event_id:
+           - 'date' e 'time' devono sempre riflettere la data/ora ORIGINALE
+           - Usa il formato ISO8601 per tutti i campi temporali
+        4. Per le azioni di modifica, includi SEMPRE sia i nuovi orari (start/end) che quelli originali (date/time)
+
         Struttura JSON:
         {{
             "action": "add|delete|modify|list",
-            "summary": "stringa",             // Obbligatorio per tutte le azioni
-            "start": "YYYY-MM-DDTHH:MM:SS",   // Obbligatorio solo per add/modify
-            "end": "YYYY-MM-DDTHH:MM:SS",     // Obbligatorio solo per add/modify
-            "event_id": "stringa",            // Obbligatorio solo per modify
-            "date": "YYYY-MM-DD",             // Obbligatorio per delete (se non c'è event_id)
-            "time": "HH:MM"                   // Obbligatorio per delete (se non c'è event_id)
+            "summary": "stringa",             // SOLO titolo, senza date/orari
+            "start": "YYYY-MM-DDTHH:MM:SS",   // Obbligatorio per add/modify (NUOVO orario)
+            "end": "YYYY-MM-DDTHH:MM:SS",     // Obbligatorio per add/modify (NUOVO orario)
+            "event_id": "stringa",            // Obbligatorio solo se specificato
+            "date": "YYYY-MM-DD",             // Obbligatorio per delete/modify senza event_id (DATA ORIGINALE)
+            "time": "HH:MM"                   // Obbligatorio per delete/modify senza event_id (ORA ORIGINALE)
         }}
         
         Istruzioni:
         1. Per le date relative (es. "domani", "lunedì prossimo") usa la data assoluta
-        2. Per gli orari: "alle 15" -> 15:00, "16:30" -> 16:30
+        2. Per gli orari: "alle 15" -> 15:00:00, "16:30" -> 16:30:00
         3. Se mancano informazioni critiche, deducile dal contesto
-        4. IMPORTANTE: Usa sempre l'anno corrente ({current_year}) per tutte le date
+        4. IMPORTANTE: Se non vieve specificato l'anno usa sempre l'anno corrente ({current_year}) per tutte le date
         5. Per l'azione "list", il campo "summary" è opzionale e può essere usato come filtro
+
+        "ATTENZIONE: Il 'summary' DEVE corrispondere ESATTAMENTE al titolo esistente nell'agenda"
+
+        Istruzioni chiave:
+        1. Per comandi tipo "sposta X da Y a Z":
+           - 'summary' = X (senza riferimenti a Y/Z)
+           - 'date'/'time' = Y (orario originale)
+           - 'start'/'end' = Z (nuovo orario)
+        2. Per date relative ("domani", "lunedì prossimo"):
+           - Converti in data assoluta usando l'anno corrente
+        3. Per orari:
+           - "alle 15" → 15:00, "16 e 30" → 16:30
+        4. Se mancano dettagli critici, deducili dal contesto
         
-        Esempi:
+        Esempi corretti:
         - Input: "Inserisci una riunione con il team domani pomeriggio alle 14 per 2 ore"
           Output: {{
             "action": "add",
@@ -135,7 +156,7 @@ class CalendarAgent:
         - Input: "Elimina l'appuntamento del 5 giugno alle 9:30"
           Output: {{
             "action": "delete", 
-            "summary": "appuntamento",
+            "summary": "appuntamento", # <-- Solo il titolo, nessun riferimento temporale
             "date": "{current_year}-06-05",
             "time": "09:30"
           }}
@@ -143,10 +164,19 @@ class CalendarAgent:
           Output: {{
             "action": "modify",
             "event_id": "", 
-            "summary": "call di marketing",
+            "summary": "call di marketing", # <-- Solo il titolo, nessun riferimento temporale
             "start": "{current_year}-05-30T15:00:00",
             "end": "{current_year}-05-30T16:00:00"
           }}
+        - Input: "Rinvia la riunione di oggi alle 14 a dopodomani alle 16"
+          Output: {{
+            "action": "modify",
+            "summary": "riunione",
+            "date": "{current_year}-03-08",    // Data originale (oggi)
+            "time": "14:00",                   // Ora originale
+            "start": "{current_year}-03-10T16:00:00", // Nuovo orario
+            "end": "{current_year}-03-10T17:00:00"
+        }}  
         - Input: "Mostrami tutti gli eventi"
           Output: {{
             "action": "list"
@@ -160,10 +190,10 @@ class CalendarAgent:
           Output: {{
             "action": "list",
             "summary": "riunioni"
-      }}          
-    
-    Input corrente: {user_input}
-    """
+          }}          
+        
+        Input corrente: {user_input}
+        """
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_input = update.message.text
