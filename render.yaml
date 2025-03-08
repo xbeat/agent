@@ -3,7 +3,10 @@ services:
     name: agent
     env: python
     plan: free
-    region: eu-central
+    region: frankfurt
+    repo: https://github.com/xbeat/agent
+    branch: main
+    autoDeploy: true    
     buildCommand: pip install -r requirements.txt
     startCommand: python agent.py
     envVars:
