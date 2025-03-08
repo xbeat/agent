@@ -29,6 +29,29 @@ class Database:
             logging.error(f"DB Connection Error: {str(e)}")
             raise
     
+    def get_events_by_summary(self, summary: str) -> list:
+        try:
+            query = "SELECT * FROM agent_events WHERE summary ILIKE %s"
+            with self.conn.cursor() as cur:
+                cur.execute(query, (f"%{summary}%",))
+                return cur.fetchall()
+        except Exception as e:
+            logging.error(f"DB Error: {str(e)}")
+            return []
+    
+    def get_events_by_date(self, date: str) -> list:
+        try:
+            query = """
+                SELECT * FROM agent_events 
+                WHERE DATE(start_time AT TIME ZONE 'Europe/Rome') = %s
+            """
+            with self.conn.cursor() as cur:
+                cur.execute(query, (date,))
+                return cur.fetchall()
+        except Exception as e:
+            logging.error(f"DB Error: {str(e)}")
+            return []
+        
     def _init_db(self):
         with self.conn.cursor() as cur:
             cur.execute("""
