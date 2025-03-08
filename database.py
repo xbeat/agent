@@ -16,7 +16,11 @@ class Database:
     def _connect(self):
         try:
             if os.getenv('ENV') == 'prod':
-                return psycopg2.connect(os.getenv('DATABASE_URL'), sslmode='require')
+                return psycopg2.connect(
+                    os.getenv('DATABASE_URL'), 
+                    sslmode='require',
+                    cursor_factory=RealDictCursor
+                )
             else:
                 return psycopg2.connect(
                     host=os.getenv('DB_HOST'),
