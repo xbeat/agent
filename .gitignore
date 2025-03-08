@@ -15,3 +15,4 @@ test_update.py
 list_events.py
 credentials/
 test_db_upsert.py
+auth_google.py
